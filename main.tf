@@ -23,22 +23,22 @@ locals {
 }
 
 resource "aws_launch_configuration" "wireguard_launch_config" {
-  name_prefix                 = "wireguard-${var.env}-"
-  image_id                    = var.ami_id == null ? data.aws_ami.ubuntu.id : var.ami_id
-  instance_type               = var.instance_type
-  key_name                    = var.ssh_key_id
-  iam_instance_profile        = (var.use_eip ? aws_iam_instance_profile.wireguard_profile[0].name : null)
-  user_data                   = nonsensitive(templatefile(
-                                "${path.module}/templates/user-data.txt", {
-                                wg_server_private_key = data.aws_ssm_parameter.wg_server_private_key.value
-                                wg_server_net         = var.wg_server_net
-                                wg_server_port        = var.wg_server_port
-                                peers                 = templatefile("${path.module}/templates/client-data.tpl", {
-                                                        wg_client_public_keys = var.wg_client_public_keys } )
-                                use_eip               = var.use_eip ? "enabled" : "disabled"
-                                eip_id                = var.eip_id
-                                wg_server_interface   = var.wg_server_interface
-                                }))
+  name_prefix          = "wireguard-${var.env}-"
+  image_id             = var.ami_id == null ? data.aws_ami.ubuntu.id : var.ami_id
+  instance_type        = var.instance_type
+  key_name             = var.ssh_key_id
+  iam_instance_profile = (var.use_eip ? aws_iam_instance_profile.wireguard_profile[0].name : null)
+  user_data = nonsensitive(templatefile(
+    "${path.module}/templates/user-data.txt", {
+      wg_server_private_key = data.aws_ssm_parameter.wg_server_private_key.value
+      wg_server_net         = var.wg_server_net
+      wg_server_port        = var.wg_server_port
+      peers = templatefile("${path.module}/templates/client-data.tpl", {
+      wg_client_public_keys = var.wg_client_public_keys })
+      use_eip             = var.use_eip ? "enabled" : "disabled"
+      eip_id              = var.eip_id
+      wg_server_interface = var.wg_server_interface
+  }))
   security_groups             = local.security_groups_ids
   associate_public_ip_address = var.use_eip
 
@@ -62,26 +62,25 @@ resource "aws_autoscaling_group" "wireguard_asg" {
     create_before_destroy = true
   }
 
-  tags = [
-    {
-      key                 = "Name"
-      value               = aws_launch_configuration.wireguard_launch_config.name
-      propagate_at_launch = true
-    },
-    {
-      key                 = "Project"
-      value               = "wireguard"
-      propagate_at_launch = true
-    },
-    {
-      key                 = "env"
-      value               = var.env
-      propagate_at_launch = true
-    },
-    {
-      key                 = "tf-managed"
-      value               = "True"
-      propagate_at_launch = true
-    },
-  ]
+  tag {
+    key                 = "Name"
+    value               = aws_launch_configuration.wireguard_launch_config.name
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "Project"
+    value               = "wireguard"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "env"
+    value               = var.env
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "tf-managed"
+    value               = "True"
+    propagate_at_launch = true
+  }
+
 }
